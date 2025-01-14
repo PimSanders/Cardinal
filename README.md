@@ -1,134 +1,220 @@
-[![Cardinal Logo](https://img.cdn.n3ko.co/lsky/2020/02/16/e75b82afd0932.png)](https://cardinal.ink)
+# Cardinal Game Server
 
-[![Go](https://github.com/vidar-team/Cardinal/actions/workflows/go.yml/badge.svg)](https://github.com/vidar-team/Cardinal/actions/workflows/go.yml)
-[![Code Scanning - Action](https://github.com/vidar-team/Cardinal/actions/workflows/codeql.yml/badge.svg)](https://github.com/vidar-team/Cardinal/actions/workflows/codeql.yml)
-[![codecov](https://codecov.io/gh/vidar-team/Cardinal/branch/master/graph/badge.svg?token=FZ9WKD0YE4)](https://codecov.io/gh/vidar-team/Cardinal)
-[![GoReport](https://goreportcard.com/badge/github.com/vidar-team/Cardinal)](https://goreportcard.com/report/github.com/vidar-team/Cardinal)
-[![Crowdin](https://badges.crowdin.net/cardinal/localized.svg)](https://crowdin.com/project/cardinal)
-[![Sourcegraph](https://img.shields.io/badge/view%20on-Sourcegraph-brightgreen.svg?logo=sourcegraph)](https://sourcegraph.com/github.com/vidar-team/Cardinal)
-[![QQ Group](https://img.shields.io/badge/QQ%E7%BE%A4-130818749-blue.svg?logo=Tencent%20QQ)](https://shang.qq.com/wpa/qunwpa?idkey=c6a35c5fbec05fdcd2d2605e08b4b5f8d6e5854471fefd8c03d370d14870b818)
+Cardinal is a Go-based game server designed to manage **Attack & Defend CTF competitions**. This guide outlines the project structure, setup process, and key features to help you deploy and manage the server.
 
-# [Cardinal](https://cardinal.ink) —— CTF AWD 线下赛平台
+---
 
-## 版权说明
+## Table of Contents
+1. [Project Structure](#project-structure)
+2. [Setup Instructions](#setup-instructions)
+   - [Prerequisites](#prerequisites)
+   - [Building the Project](#building-the-project)
+   - [Configuration](#configuration)
+   - [Running the Application](#running-the-application)
+   - [Stopping the Application](#stopping-the-application)
+3. [Key Functionalities](#key-functionalities)
+   - [Initialization](#initialization)
+   - [API Endpoints](#api-endpoints)
+   - [Flag Submission](#flag-submission)
+4. [Docker Setup](#docker-setup)
+   - [Docker Compose Services](#docker-compose-services)
+      - [Cardinal](#cardinal-service)
+      - [Database](#database-service)
+      - [Web](#web-service)
+5. [Docker Compose File](#docker-compose-file)
 
-> [!IMPORTANT]
-> <img src="https://github.com/wuhan005/Asteroid/assets/12731778/73101d56-de47-4e8f-9d1e-6920428b48e0" width="150px"/>
-> 
-> 本项目为凌武科技 [lwsec.cn](https://lwsec.cn/) 开源版竞赛平台。
-> 
-> 商业版支持 CTF、AWD、理论答题赛、车联网安全赛、数据安全赛、工控安全赛、供应链安全赛等更多赛制与功能，商业合作请于官网联系我们。
+---
 
-## 介绍
+## Project Structure
 
-Cardinal 是由 Vidar-Team 开发的 AWD 比赛平台，使用 Go 编写。本程序可以作为 CTF 线下比赛平台，亦可用于团队内部 AWD 模拟练习。
-
-![Cardinal Frontend](https://s1.ax1x.com/2020/05/28/tVPltI.png)
-
-<details>
-<summary>更多图片</summary>
-
-![Cardinal Backend](https://s1.ax1x.com/2020/05/28/tVP1ht.png)
-
-![Asteroid](https://s1.ax1x.com/2020/05/28/tVP6jU.png)
-（该 AWD 实时 3D 攻击大屏为项目 [Asteroid](https://github.com/wuhan005/Asteroid)，已适配接入 Cardinal）
-
-</details>
-
-## 文档
-
-### 官方文档  [cardinal.ink](https://cardinal.ink)
-
-> 请您在使用前认真阅读官方使用文档，谢谢 ♪(･ω･)ﾉ
-
-### 教程
-
-[AWD平台搭建–Cardinal](https://cloud.tencent.com/developer/article/1744139)
-
-## 功能介绍
-
-* 管理员创建题目、分配题目靶机、参赛队伍、生成 Flag、发布公告
-    * 支持上传参赛队伍 Logo
-    * 题目可设置状态开放、下线，队伍分数同步更新
-    * 批量生成 Flag 并导出，方便 Check bot
-
-* 每轮结束后自动结算分数，并更新排行榜
-    * 自动对分数计算正确性进行检查
-    * 分数计算异常日志提醒
-    * 自定义攻击、Checkdown 分数
-    * 队伍平分靶机分数
-    * 自动更新靶机 Flag
-    * 触发 WebHook，接入第三方应用
-
-* 管理端首页数据总览查看
-    * 管理员、系统重要操作日志记录
-    * 系统运行状态查看
-
-* 选手查看自己的队伍信息，靶机信息，Token，总排行榜，公告
-    * 总排行榜靶机状态实时更新
-
-* 前后端分离，前端开源可定制
-
-## 安装
-
-**Cardinal 当前正在进行部分基础架构的重写。目前强烈建议您通过 Release 或 Docker
-安装而非直接源码编译。若实在需要进行源码上的变更，请从 [eaea493d](https://github.com/vidar-team/Cardinal/commit/eaea493d847546786e8f2fe9e717ee11c79324b6)
-处进行编写。**
-
-### Release 安装
-
-[下载](https://github.com/vidar-team/Cardinal/releases)适用于您目标机器的架构程序，运行即可。
-
-```
-# 解压程序包
-tar -zxvf Cardinal_VERSION_OS_ARCH.tar.gz
-
-# 赋予执行权限
-chmod +x ./Cardinal
-
-# 运行
-./Cardinal
+```plaintext
+./
+├── gameserver
+│   ├── cardinal             # Core game server code
+│   ├── checker              # Checker scripts
+│   ├── conf                 # Configuration files
+│   ├── docker-compose.yml   # Docker Compose configuration
+│   ├── README               # This file
+│   └── web                  # Web service files (e.g., Nginx)
 ```
 
-### 编译安装
+---
 
-克隆代码，编译后运行生成的二进制文件即可。
+## Setup Instructions
 
+### Prerequisites
+
+- [Docker](https://www.docker.com/)
+- [Docker Compose](https://docs.docker.com/compose/)
+
+### Building the Project
+
+1. Clone the repository:
+    ```sh
+    git clone https://github.com/BumbleB-NL/attack-defense.git
+    cd gameserver
+    ```
+
+2. Build the Docker images:
+    ```sh
+    docker compose build
+    ```
+
+### Configuration
+
+Edit the configuration file located at `conf/Cardinal.toml` to match your environment's requirements.
+
+### Running the Application
+
+Start the application with Docker Compose:
+```sh
+docker-compose up -d
 ```
-# 克隆代码
-git clone https://github.com/vidar-team/Cardinal.git
 
-# 编译
-go build -o Cardinal
+This will launch the services defined in the Docker Compose file: **cardinal**, **db**, and **web**.
 
-# 赋予执行权限
-chmod +x ./Cardinal
+### Stopping the Application
 
-# 运行
-./Cardinal
+Stop the application and remove the containers:
+```sh
+docker-compose down
 ```
 
-### Docker 部署
+---
 
-首先请从 [Docker 官网](https://docs.docker.com) 安装 `docker` 与 `docker-compose`
+## Key Functionalities
 
-确保当前用户拥有 `docker` 及 `docker-compose` 权限，然后执行
+### Initialization
 
-```bash
-curl https://sh.cardinal.ink | bash
+The initialization process (in `bootstrap.LinkStart`) performs the following tasks:
+- Load configuration settings.
+- Initialize the MySQL database.
+- Set up the game timer.
+- Initialize caches and webhooks.
+- Start the web server.
+
+### API Endpoints
+
+API routes (defined in `route.Init`) include:
+- `POST /api/flag` - Submit a flag.
+- `POST /api/login` - Team login.
+- `POST /api/logout` - Team logout.
+- `GET /api/rank` - Fetch ranking data.
+- `GET /api/asteroid` - WebSocket endpoint for asteroid interactions.
+
+### Flag Submission
+
+Flag submission logic (in `game.SubmitFlag`) includes:
+- Verifying that the competition has started.
+- Validating the authorization header.
+- Checking the flag against current and future rounds.
+- Recording the flag in the database.
+
+---
+
+## Docker Setup
+
+### Overview
+
+The server uses a multi-container setup with the following services:
+1. **cardinal** - Core game server.
+2. **db** - MySQL database.
+3. **web** - Nginx reverse proxy.
+
+Each service is defined in the `docker-compose.yml` file.
+
+### Docker Compose Services
+
+#### Cardinal Service
+
+- **Build context:** `./cardinal`
+- **Environment variable:** `CARDINAL_DOCKER=1`
+- **Ports:** Exposes `19999` (game server port).
+- **Volumes:** Mounts `./conf/Cardinal.toml` for configuration.
+- **Logging:** Logs are capped at 200KB per file (max 10 files).
+- **Restart policy:** Always restarts if stopped.
+- **Dependencies:** Waits for the database service (`db`) to be ready.
+
+#### Database Service
+
+- **Image:** `mysql:8.0.21`
+- **Ports:** Exposes `3306` (MySQL default port).
+- **Volumes:** Persists data in `./Cardinal_database`.
+- **Environment variables:** 
+  - `MYSQL_ROOT_PASSWORD`: Root password.
+  - `MYSQL_DATABASE`: Database name.
+  - `MYSQL_USER`: User for the application.
+  - `MYSQL_PASSWORD`: Password for the user.
+- **Command:** Configured to use UTF-8 MB4 for better compatibility.
+- **Logging:** Similar to the cardinal service.
+- **Restart policy:** Always restarts if stopped.
+
+#### Web Service
+
+- **Build context:** `./web`
+- **Ports:** Exposes `8087` on the host.
+- **Volumes:** Mounts `./web/nginx.conf` for Nginx configuration.
+- **Logging:** Configured with the same logging settings.
+- **Restart policy:** Always restarts if stopped.
+
+---
+
+## Docker Compose File
+
+Below is the full `docker-compose.yml` file for reference:
+
+```yaml
+services:
+  cardinal:
+    build:
+      context: ./cardinal
+    environment:
+      CARDINAL_DOCKER: 1
+    ports:
+      - "19999:19999"
+    volumes:
+      - ./conf/Cardinal.toml:/Cardinal/conf/Cardinal.toml
+      - ./checker/:/checker/
+    logging:
+      options:
+        max-size: "200k"
+        max-file: "10"
+    restart: always
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0.21
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./Cardinal_database:/var/lib/mysql
+    logging:
+      options:
+        max-size: "200k"
+        max-file: "10"
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Cardinal
+      MYSQL_DATABASE: Cardinal
+      MYSQL_USER: Cardinal
+      MYSQL_PASSWORD: Cardinal
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  web:
+    build:
+      context: ./web
+    ports:
+      - 8087:80
+    volumes:
+      - ./web/nginx.conf:/etc/nginx/conf.d/default.conf
+    logging:
+      options:
+        max-size: "200k"
+        max-file: "10"
+    restart: always
 ```
 
-初次使用应当在下载后配置 `docker-compose.yml` 内的各项参数
+---
 
-## 开始使用
-
-默认端口： `19999`
-
-* 选手端 `http://localhost:19999/`
-* 后台管理 `http://localhost:19999/manager`
-
-## 开源协议
-
-© Vidar-Team
-
-GNU Affero General Public License v3.0
+For detailed implementation and troubleshooting, explore the codebase and configuration files.

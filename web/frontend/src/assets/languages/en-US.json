@@ -1,0 +1,57 @@
+{
+  "general": {
+    "score": "",
+    "close": "Close",
+    "minute": "Minute(s)",
+    "second": "Second(s)"
+  },
+  "login": {
+    "title": "Log in",
+    "account": "Account",
+    "password": "Password",
+    "login": "Log in",
+    "reset": "Reset",
+    "loading": "Loading...",
+    "account_empty": "Please enter your account",
+    "password_empty": "Please enter your password"
+  },
+  "gamebox": {
+    "empty": "No challenges currently available",
+    "list": "GameBox List",
+    "team": "Team",
+    "challenge": "Challenge",
+    "address": "Address"
+  },
+  "flag": {
+    "submit_flag": "Submit Flag",
+    "submit": "Submit",
+    "input_your_flag": "Please enter your flag here..."
+  },
+  "log": {
+    "live_log": "Live Log",
+    "no_data": "No data available",
+    "submit_flag": "{to} [ {challenge} ] was attacked by {from}",
+    "check_down": "{team} [ {challenge} ] is down"
+  },
+  "timer": {
+    "not_begin": "The game is not yet ready",
+    "pause": "The game is paused",
+    "end": "The game has ended",
+    "til_round_end": "Time remaining in this round:",
+    "current_round": "Current Round: {round}"
+  },
+  "bulletin": {
+    "empty": "No bulletins available"
+  },
+  "rank": {
+    "rank": "#",
+    "team": "Team",
+    "score": "Score"
+  },
+  "header": {
+    "status": "GameBox Status",
+    "rank": "Rank",
+    "bulletin": "Bulletin",
+    "logout": "Log out"
+  }
+}

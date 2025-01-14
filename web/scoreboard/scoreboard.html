@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scoreboard</title>
+    <style>
+        /* General Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background: radial-gradient(circle at 50% 50%, #141e30, #243b55);
+            color: #ffffff;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            width: 95%;
+            max-width: 1200px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 20px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5), 0 0 50px rgba(0, 255, 255, 0.3);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 20px;
+            background: linear-gradient(90deg, rgba(0, 255, 255, 0.3), rgba(0, 0, 0, 0.1), rgba(0, 255, 255, 0.3));
+            z-index: -1;
+            filter: blur(10px);
+            animation: underglow 3s infinite;
+        }
+
+        @keyframes underglow {
+            0%, 100% {
+                opacity: 0.5;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.1);
+            }
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(90deg, #0f2027, #203a43, #2c5364);
+            border-bottom: 2px solid rgba(0, 255, 255, 0.6);
+            color: #00ffff;
+            font-size: 28px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+            table-layout: auto;
+            position: relative;
+        }
+
+        th, td {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        th {
+            background: rgba(0, 255, 255, 0.2);
+            color: #00ffff;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 16px;
+            text-shadow: 0 0 8px #00ffff;
+        }
+
+        td {
+            font-size: 14px;
+            color: #ffffff;
+        }
+
+        tr {
+            transition: background 0.3s;
+        }
+
+        tr:hover {
+            background: rgba(0, 255, 255, 0.2);
+        }
+
+        tr:nth-child(even) {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .team-name {
+            font-weight: bold;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff, 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        .status {
+            display: inline-block;
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 8px;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .status.ok {
+            background: linear-gradient(90deg, #00c851, #007e33);
+            color: #ffffff;
+            box-shadow: 0 0 8px rgba(0, 200, 81, 0.7);
+        }
+        .status.attacked {
+            background: linear-gradient(90deg, #ffbb33, #ff8800);
+            color: #ffffff;
+            box-shadow: 0 0 8px rgba(255, 187, 51, 0.7);
+        }
+        .status.down {
+            background: linear-gradient(90deg, #ff4444, #cc0000);
+            color: #ffffff;
+            box-shadow: 0 0 8px rgba(255, 68, 68, 0.7);
+        }
+
+        .round-stats {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            text-align: center;
+            color: #00ffff;
+        }
+
+        .round-stat {
+            margin: 0 15px;
+        }
+
+        .round-status {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .status.on {
+            color: #00c851;
+        }
+        .status.off {
+            color: #ff4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 id="scoreboard-title">Scoreboard</h1>
+        </div>
+        <table>
+            <thead>
+                <tr id="table-header">
+                    <!-- Dynamic headers will be added here -->
+                </tr>
+            </thead>
+            <tbody id="scoreboard-body"></tbody>
+                <!-- Dynamic content goes here -->
+            </tbody>
+        </table>
+
+        <div class="round-stats">
+            <div class="round-stat">
+                <div class="round-status">
+                    <div id="round-number">Round: 0</div>
+                </div>
+                <div class="round-status">
+                    Round time remaining: <span id="countdown-timer">00:00</span>
+
+                </div>
+                <div class="round-status">
+                    Game ends in: <span id="endtime-countdown">00:00:00</span>
+                </div>
+                <div class="round-status">
+                    Status: <span id="game-status" class="status on">On</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const apiEndpoint = "/api/rank";
+        const roundApiEndpoint = "/api/time";
+
+        let remainingTime = 0; // Remaining time in seconds
+        let countdownInterval; // Interval for countdown
+        let currentRound = 0; // Track the current round to detect changes
+        let endTime = 0; // Store EndTime from the API
+        let endCountdownInterval; // Interval for end countdown
+
+        // Function to fetch and update scores
+        async function updateScores() {
+            try {
+                const response = await fetch(apiEndpoint);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                const jsonData = await response.json();
+
+                // Check for valid data and error field
+                if (jsonData.error === 0 && jsonData.data) {
+                    renderScores(jsonData.data);
+                } else {
+                    console.error("Error in API response:", jsonData.msg);
+                }
+            } catch (error) {
+                console.error("Failed to fetch scores:", error);
+            }
+        }
+
+        async function updateRoundStats() {
+            try {
+                const response = await fetch(roundApiEndpoint);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                const roundData = await response.json();
+
+                if (roundData.error === 0 && roundData.data) {
+                    const roundInfo = roundData.data;
+                    document.getElementById('round-number').textContent = `Round: ${roundInfo.NowRound}`;
+                    document.getElementById('game-status').textContent = roundInfo.Status === "on" ? "On" : "Off";
+                    document.getElementById('game-status').className = `status ${roundInfo.Status}`;
+
+                    // Restart timer if the round has changed
+                    if (currentRound !== roundInfo.NowRound) {
+                        currentRound = roundInfo.NowRound; // Update the current round
+                        remainingTime = roundInfo.RoundRemainTime; // Time in seconds from API
+                        startCountdown(); // Restart the countdown
+                    }
+
+                    // Set EndTime and start countdown if necessary
+                    if (endTime !== roundInfo.EndTime) {
+                        endTime = roundInfo.EndTime;
+                        startEndCountdown();
+                    }
+                } else {
+                    console.error("Error in round API response:", roundData.msg);
+                }
+            } catch (error) {
+                console.error("Failed to fetch round stats:", error);
+            }
+        }
+
+        function startEndCountdown() {
+            clearInterval(endCountdownInterval); // Clear any previous interval
+
+            endCountdownInterval = setInterval(() => {
+                const now = Math.floor(Date.now() / 1000); // Current time in seconds
+                const timeRemaining = endTime - now;
+
+                if (timeRemaining > 0) {
+                    updateEndCountdownDisplay(timeRemaining);
+                } else {
+                    clearInterval(endCountdownInterval); // Stop countdown when time is up
+                    document.getElementById('endtime-countdown').textContent = "00:00:00";
+                }
+            }, 1000);
+        }
+
+        function updateEndCountdownDisplay(timeInSeconds) {
+            const hours = Math.floor(timeInSeconds / 3600);
+            const minutes = Math.floor((timeInSeconds % 3600) / 60);
+            const seconds = timeInSeconds % 60;
+
+            document.getElementById('endtime-countdown').textContent =
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+
+        // Function to start a smooth countdown
+        function startCountdown() {
+            clearInterval(countdownInterval); // Clear any previous interval
+            countdownInterval = setInterval(() => {
+                if (remainingTime > 0) {
+                    remainingTime--;
+                    updateCountdownDisplay(remainingTime);
+                } else {
+                    clearInterval(countdownInterval); // Stop countdown at 0
+                    document.getElementById('countdown-timer').textContent = "00:00";
+                }
+            }, 1000); // Update every second
+        }
+
+        // Function to format and display remaining time
+        function updateCountdownDisplay(timeInSeconds) {
+            const minutes = Math.floor(timeInSeconds / 60);
+            const seconds = timeInSeconds % 60;
+            document.getElementById('countdown-timer').textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // Function to render scores to the table
+        function renderScores(data) {
+            const titleElement = document.getElementById('scoreboard-title');
+            const tableHeader = document.getElementById('table-header');
+            const tbody = document.getElementById('scoreboard-body');
+            
+            // Update title
+            titleElement.textContent = "Scoreboard";
+
+            // Clear existing content
+            tableHeader.innerHTML = "";
+            tbody.innerHTML = "";
+
+            // Add fixed columns: Rank, Team, Total Score
+            tableHeader.innerHTML += `
+                <th>#</th>
+                <th>Team</th>
+                <th>Total Score</th>
+            `;
+
+            // Add challenge status columns dynamically
+            const challenges = data.Title; // Array of challenge names
+            challenges.forEach(challenge => {
+                tableHeader.innerHTML += `<th>${challenge}</th>`;
+            });
+
+            // Populate table rows
+            data.Rank.forEach((team, index) => {
+                const row = document.createElement('tr');
+
+                // Add rank, team name, and total score
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td class="team-name">${team.TeamName}</td>
+                    <td><b>${team.Score.toFixed(2)}</b></td>
+                `;
+
+                // Add statuses for each challenge
+                team.GameBoxStatus.forEach((status) => {
+                    let statusClass = 'ok';
+                    let statusText = 'OK';
+                    if (status.IsDown) {
+                        statusClass = 'down';
+                        statusText = 'Down';
+                    } else if (status.IsAttacked) {
+                        statusClass = 'attacked';
+                        statusText = 'Attacked';
+                    }
+
+                    row.innerHTML += `
+                        <td>
+                            <span class="status ${statusClass}">${statusText}</span>
+                        </td>
+                    `;
+                });
+
+                tbody.appendChild(row);
+            });
+        }
+
+        // Initial fetch and setup periodic updates
+        updateScores();
+        updateRoundStats();
+        setInterval(updateScores, 10000); // Fetch scores every 10 seconds
+        setInterval(updateRoundStats, 5000); // Fetch round stats every 5 seconds
+    </script>
+
+    <footer>
+        <p style="text-align: center; color: #00ffff; font-size: 12px; margin-top: 20px;">Designed and built by ChatGPT | Modified with 😡 by Pim</p>
+        <style>
+            footer {
+                position: absolute;
+                bottom: 10px;
+                width: 100%;
+            }
+        </style>
+    </footer>
+</body>
+</html>
